@@ -1,0 +1,136 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PropertyCategory {
+  FLAT
+  COTTAGE
+  HOUSE
+  LAND
+  PROJECT
+  VILLA
+}
+
+enum PropertyStatus {
+  ACTIVE
+  SOLD
+}
+
+enum OwnershipType {
+  RENT
+  OWNERSHIP
+}
+
+model Property {
+  id          Int           @id @default(autoincrement())
+  name        String
+  category    PropertyCategory
+  status      PropertyStatus @default(ACTIVE)
+  ownershipType OwnershipType
+  description String        @db.Text
+  city        String
+  street      String
+  country     String
+  latitude    Float?
+  longitude   Float?
+  virtualTour String?       // URL to virtual tour
+  videoUrl    String?       // URL to property video
+  
+  // Basic Information
+  size        String        // Changed from sqf
+  beds        String
+  baths       String
+  price       Decimal       @db.Decimal(10, 2)
+  discountedPrice Decimal?  @db.Decimal(10, 2)  // New field
+  
+  // Building Details
+  buildingStoriesNumber String?    // Počet podlaží
+  buildingCondition    String?     // Stav budovy
+  apartmentCondition   String?     // Stav bytu
+  aboveGroundFloors    String?     // Nadzemní podlaží
+  reconstructionYearApartment String?  // Rok rekonstrukce bytu
+  reconstructionYearBuilding String?   // Rok rekonstrukce domu
+  totalAboveGroundFloors String?   // Celkem nadzemních podlaží
+  totalUndergroundFloors String?   // Celkem podzemních podlaží
+  
+  // Areas and Spaces
+  floorArea          String?    // Podlahová plocha
+  builtUpArea        String?    // Zastavěná plocha
+  gardenHouseArea    String?    // Plocha zahradního domu
+  terraceArea        String?    // Plocha terasy
+  totalLandArea      String?    // Celková plocha pozemku
+  gardenArea         String?    // Plocha zahrady
+  garageArea         String?    // Plocha garáže
+  balconyArea        String?    // Plocha balkonu
+  pergolaArea        String?    // Plocha pergoly
+  basementArea       String?    // Plocha sklepa
+  workshopArea       String?    // Plocha dílny
+  totalObjectArea    String?    // Celková plocha objektu
+  usableArea         String?    // Užitná plocha
+  landArea           String?    // Plocha pozemku
+  
+  // Additional Information
+  objectType         String?    // Druh objektu
+  objectLocationType String?    // Poloha a typ objektu
+  houseEquipment     String?    // Vybavení domu
+  accessRoad         String?    // Přístupová komunikace
+  objectCondition    String?    // Stav objektu
+  reservationPrice   String?    // Cena rezervace
+  equipmentDescription String?  @db.Text  // Popis vybavení domu
+  additionalSources  String?    @db.Text  // Zdroje doplnění
+  buildingPermit     String?    // Stavební povolení
+  buildability       String?    // Zastavitelnost
+  utilitiesOnLand    String?    // Inženýrské sítě na pozemku
+  utilitiesOnAdjacentRoad String?  // Inženýrské sítě na přilehlé komunikaci
+  payments           String?    // Platby
+  
+  // Agent Information
+  brokerId           String?    // Broker ID
+  secondaryAgent     String?    // Secondary property agent
+  
+  // Standard fields
+  rating      Decimal       @db.Decimal(3, 1)
+  reviewCount Int          @default(0)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  
+  // Relations
+  images      PropertyImage[]
+  floorplans  PropertyFloorplan[]
+
+  @@map("properties")
+}
+
+model PropertyImage {
+  id         Int      @id @default(autoincrement())
+  url        String
+  isMain     Boolean  @default(false)
+  propertyId Int      @map("property_id")
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("property_images")
+}
+
+model PropertyFloorplan {
+  id         Int      @id @default(autoincrement())
+  url        String
+  name       String   // e.g., "Ground Floor", "First Floor"
+  propertyId Int      @map("property_id")
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("property_floorplans")
+}
