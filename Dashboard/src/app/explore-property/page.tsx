@@ -132,7 +132,7 @@ export default function ExploreProperty() {
                                                 <div className="absolute inset-0 bg-gray-200 animate-pulse"></div>
                                             )}
                                             <Image 
-                                                src={item.image} 
+                                                src={item.images[0]?.url || '/images/placeholder.jpg'} 
                                                 width={0} 
                                                 height={0} 
                                                 sizes="100vw" 
@@ -182,22 +182,10 @@ export default function ExploreProperty() {
                                                 </li>
 
                                                 <li>
-                                                    <span className="text-slate-400">Rating</span>
-                                                    <ul className="text-lg font-medium text-amber-400 list-none">
-                                                        {[...Array(Math.floor(Number(item.rating)))].map((_, i) => (
-                                                            <li key={i} className="inline">
-                                                                <i className="mdi mdi-star"></i>
-                                                            </li>
-                                                        ))}
-                                                        {Number(item.rating) % 1 !== 0 && (
-                                                            <li className="inline">
-                                                                <i className="mdi mdi-star-half"></i>
-                                                            </li>
-                                                        )}
-                                                        <li className="inline text-black dark:text-white">
-                                                            {Number(item.rating).toFixed(1)}
-                                                        </li>
-                                                    </ul>
+                                                    <span className="text-slate-400">Layout</span>
+                                                    <p className="text-lg font-medium text-green-600">
+                                                        {item.layout || 'Not specified'}
+                                                    </p>
                                                 </li>
                                             </ul>
                                         </div>

@@ -1,15 +1,76 @@
 const express = require('express');
 const router = express.Router();
-const { Pool } = require('pg');
-const { upload } = require('../services/s3Service');
+const { PrismaClient } = require('@prisma/client');
+const { uploadPropertyFiles, uploadFileToS3 } = require('../services/s3Service');
 const { validateProperty } = require('../middleware/validation');
 
-const pool = new Pool({
-    user: process.env.DB_USER || 'radimbohac',
-    host: process.env.DB_HOST || 'localhost',
-    database: process.env.DB_NAME || 'postgres',
-    password: process.env.DB_PASSWORD || '12345',
-    port: process.env.DB_PORT || 5432,
+const prisma = new PrismaClient();
+
+// Helper function to convert S3 URLs to CloudFront URLs
+const convertToCloudFrontUrl = (url) => {
+    if (!url) return url;
+    return url.replace(
+        'realitypuchyr-estate-photos.s3.eu-central-1.amazonaws.com',
+        'd2ibq52z3bzi2i.cloudfront.net'
+    );
+};
+
+// Test S3 upload endpoint
+router.post('/test-upload', uploadPropertyFiles, async (req, res) => {
+    try {
+        if (!req.files || (!req.files.images && !req.files.files)) {
+            return res.status(400).json({ error: 'No files uploaded' });
+        }
+
+        console.log('Test upload - Files received:', {
+            images: req.files.images?.map(file => ({
+                originalname: file.originalname,
+                mimetype: file.mimetype,
+                size: file.size
+            })),
+            files: req.files.files?.map(file => ({
+                originalname: file.originalname,
+                mimetype: file.mimetype,
+                size: file.size
+            }))
+        });
+
+        // Upload all files to S3
+        const uploadPromises = [];
+        
+        if (req.files.images) {
+            uploadPromises.push(...req.files.images.map(async (file) => {
+                const imageUrl = await uploadFileToS3(file, 'test', 'images');
+                return {
+                    type: 'image',
+                    originalname: file.originalname,
+                    url: imageUrl
+                };
+            }));
+        }
+
+        if (req.files.files) {
+            uploadPromises.push(...req.files.files.map(async (file) => {
+                const fileUrl = await uploadFileToS3(file, 'test', 'files');
+                return {
+                    type: 'file',
+                    originalname: file.originalname,
+                    url: fileUrl,
+                    mimetype: file.mimetype,
+                    size: file.size
+                };
+            }));
+        }
+
+        const results = await Promise.all(uploadPromises);
+        res.json(results);
+    } catch (error) {
+        console.error('Test upload error:', error);
+        res.status(500).json({
+            error: 'Upload failed',
+            details: error.message
+        });
+    }
 });
 
 // Get all properties with pagination and search
@@ -18,46 +79,50 @@ router.get('/', async (req, res, next) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 12;
         const search = req.query.search || '';
-        const offset = (page - 1) * limit;
+        const skip = (page - 1) * limit;
 
-        let query = 'SELECT * FROM properties';
-        let countQuery = 'SELECT COUNT(*) FROM properties';
-        const queryParams = [];
+        // Build where clause for search
+        const where = search ? {
+            OR: [
+                { name: { contains: search, mode: 'insensitive' } },
+                { description: { contains: search, mode: 'insensitive' } }
+            ]
+        } : {};
 
-        if (search) {
-            query += ' WHERE name ILIKE $1';
-            countQuery += ' WHERE name ILIKE $1';
-            queryParams.push(`%${search}%`);
-        }
+        // Get total count
+        const total = await prisma.property.count({ where });
 
-        query += ' ORDER BY created_at DESC LIMIT $' + (queryParams.length + 1) + ' OFFSET $' + (queryParams.length + 2);
-        queryParams.push(limit, offset);
+        // Get properties with pagination
+        const properties = await prisma.property.findMany({
+            where,
+            skip,
+            take: limit,
+            orderBy: { createdAt: 'desc' },
+            include: {
+                images: true
+            }
+        });
 
-        const [propertiesResult, countResult] = await Promise.all([
-            pool.query(query, queryParams),
-            pool.query(countQuery, search ? [queryParams[0]] : [])
-        ]);
-
-        const total = parseInt(countResult.rows[0].count);
-        const pages = Math.ceil(total / limit);
-
-        // Transform the properties to use value instead of price
-        const transformedProperties = propertiesResult.rows.map(property => ({
+        // Convert S3 URLs to CloudFront URLs
+        const propertiesWithCloudFrontUrls = properties.map(property => ({
             ...property,
-            value: property.price,
-            createdAt: property.created_at
+            images: property.images.map(image => ({
+                ...image,
+                url: convertToCloudFrontUrl(image.url)
+            }))
         }));
 
         res.json({
-            properties: transformedProperties,
+            properties: propertiesWithCloudFrontUrls,
             pagination: {
                 total,
-                pages,
+                pages: Math.ceil(total / limit),
                 currentPage: page,
                 limit
             }
         });
     } catch (err) {
+        console.error('Error fetching properties:', err);
         next(err);
     }
 });
@@ -66,86 +131,211 @@ router.get('/', async (req, res, next) => {
 router.get('/:id', async (req, res, next) => {
     try {
         const { id } = req.params;
-        const result = await pool.query('SELECT * FROM properties WHERE id = $1', [id]);
+        const property = await prisma.property.findUnique({
+            where: { id: parseInt(id) },
+            include: {
+                images: true,
+                floorplans: true
+            }
+        });
         
-        if (result.rows.length === 0) {
+        if (!property) {
             return res.status(404).json({ error: 'Property not found' });
         }
         
-        // Transform the response to use value instead of price
-        const property = result.rows[0];
-        const transformedProperty = {
-            ...property,
-            value: property.price,
-            createdAt: property.created_at
-        };
-        delete transformedProperty.price;
-        delete transformedProperty.created_at;
-        
-        res.json(transformedProperty);
+        res.json(property);
     } catch (err) {
+        console.error('Error fetching property:', err);
         next(err);
     }
 });
 
 // Create new property
-router.post('/', upload.array('images', 10), validateProperty, async (req, res, next) => {
+router.post('/', uploadPropertyFiles, validateProperty, async (req, res, next) => {
     try {
-        const { name, sqf, beds, baths, price, rating, featuredImageIndex } = req.body;
-        
-        const result = await pool.query(
-            'INSERT INTO properties (name, image, sqf, beds, baths, price, rating) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-            [name, 'pending', sqf, beds, baths, price, rating]
-        );
+        console.log('Files received:', req.files);
+        console.log('Request body:', req.body);
 
-        const propertyId = result.rows[0].id;
-        let featuredImageUrl = null;
+        const {
+            name, category, status, ownershipType, description,
+            city, street, country, latitude, longitude,
+            virtualTour, videoUrl, size, beds, baths,
+            price, discountedPrice, buildingStoriesNumber,
+            buildingCondition, apartmentCondition, aboveGroundFloors,
+            reconstructionYearApartment, reconstructionYearBuilding,
+            totalAboveGroundFloors, totalUndergroundFloors,
+            floorArea, builtUpArea, gardenHouseArea, terraceArea,
+            totalLandArea, gardenArea, garageArea, balconyArea,
+            pergolaArea, basementArea, workshopArea, totalObjectArea,
+            usableArea, landArea, objectType, objectLocationType,
+            houseEquipment, accessRoad, objectCondition,
+            reservationPrice, equipmentDescription, additionalSources,
+            buildingPermit, buildability, utilitiesOnLand,
+            utilitiesOnAdjacentRoad, payments, brokerId, secondaryAgent,
+            layout
+        } = req.body;
 
-        if (req.files && req.files.length > 0) {
-            const imageUrls = [];
-            
-            for (let i = 0; i < req.files.length; i++) {
-                const imageUrl = await uploadImageToS3(req.files[i], propertyId);
-                imageUrls.push(imageUrl);
-                
-                if (i === parseInt(featuredImageIndex)) {
-                    featuredImageUrl = imageUrl;
-                }
-            }
-
-            if (featuredImageUrl) {
-                await pool.query(
-                    'UPDATE properties SET image = $1 WHERE id = $2',
-                    [featuredImageUrl, propertyId]
-                );
-            }
-
-            for (const imageUrl of imageUrls) {
-                await pool.query(
-                    'INSERT INTO property_images (property_id, image_url, is_featured) VALUES ($1, $2, $3)',
-                    [propertyId, imageUrl, imageUrl === featuredImageUrl]
-                );
-            }
-
-            const updatedProperty = await pool.query(
-                `SELECT p.*, 
-                    json_agg(json_build_object(
-                        'id', pi.id,
-                        'url', pi.image_url,
-                        'is_featured', pi.is_featured
-                    )) as images
-                FROM properties p
-                LEFT JOIN property_images pi ON p.id = pi.property_id
-                WHERE p.id = $1
-                GROUP BY p.id`,
-                [propertyId]
-            );
-
-            res.status(201).json(updatedProperty.rows[0]);
-        } else {
-            res.status(201).json(result.rows[0]);
+        // Validate required fields
+        if (!name || !price) {
+            return res.status(400).json({
+                error: 'Missing required fields',
+                details: [
+                    !name && 'Name is required',
+                    !price && 'Price is required'
+                ].filter(Boolean)
+            });
         }
+
+        // Create property with Prisma
+        const property = await prisma.property.create({
+            data: {
+                // Required fields
+                name,
+                price: parseFloat(price),
+                category: category.toUpperCase(),
+                status: status.toUpperCase(),
+                ownershipType: ownershipType.toUpperCase(),
+                description: description || '',
+                city: city || '',
+                street: street || '',
+                country: country || '',
+                size: size || '',
+                beds: beds || '',
+                baths: baths || '',
+                layout: layout || '',
+                virtualTour: virtualTour || '',
+                files: '[]',
+                
+                // Optional fields
+                latitude: latitude ? parseFloat(latitude) : null,
+                longitude: longitude ? parseFloat(longitude) : null,
+                videoUrl: videoUrl || null,
+                discountedPrice: discountedPrice ? parseFloat(discountedPrice) : null,
+                buildingStoriesNumber: buildingStoriesNumber || null,
+                buildingCondition: buildingCondition || null,
+                apartmentCondition: apartmentCondition || null,
+                aboveGroundFloors: aboveGroundFloors || null,
+                reconstructionYearApartment: reconstructionYearApartment || null,
+                reconstructionYearBuilding: reconstructionYearBuilding || null,
+                totalAboveGroundFloors: totalAboveGroundFloors || null,
+                totalUndergroundFloors: totalUndergroundFloors || null,
+                floorArea: floorArea || null,
+                builtUpArea: builtUpArea || null,
+                gardenHouseArea: gardenHouseArea || null,
+                terraceArea: terraceArea || null,
+                totalLandArea: totalLandArea || null,
+                gardenArea: gardenArea || null,
+                garageArea: garageArea || null,
+                balconyArea: balconyArea || null,
+                pergolaArea: pergolaArea || null,
+                basementArea: basementArea || null,
+                workshopArea: workshopArea || null,
+                totalObjectArea: totalObjectArea || null,
+                usableArea: usableArea || null,
+                landArea: landArea || null,
+                objectType: objectType || null,
+                objectLocationType: objectLocationType || null,
+                houseEquipment: houseEquipment || null,
+                accessRoad: accessRoad || null,
+                objectCondition: objectCondition || null,
+                reservationPrice: reservationPrice || null,
+                equipmentDescription: equipmentDescription || null,
+                additionalSources: additionalSources || null,
+                buildingPermit: buildingPermit || null,
+                buildability: buildability || null,
+                utilitiesOnLand: utilitiesOnLand || null,
+                utilitiesOnAdjacentRoad: utilitiesOnAdjacentRoad || null,
+                payments: payments || null,
+                brokerId: brokerId || null,
+                secondaryAgent: secondaryAgent || null
+            }
+        });
+
+        // Handle image uploads if any
+        if (req.files && req.files.images) {
+            console.log('Processing', req.files.images.length, 'images');
+            const imagePromises = req.files.images.map(async (file, index) => {
+                try {
+                    console.log('Uploading image', index + 1);
+                    const imageUrl = await uploadFileToS3(file, property.id, 'images');
+                    console.log('Image uploaded successfully:', imageUrl);
+                    return prisma.propertyImage.create({
+                        data: {
+                            url: imageUrl,
+                            isMain: index === 0, // First image is main
+                            propertyId: property.id
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error uploading image', index + 1, ':', error);
+                    throw error;
+                }
+            });
+
+            try {
+                await Promise.all(imagePromises);
+                console.log('All images processed successfully');
+            } catch (error) {
+                console.error('Error processing images:', error);
+                // If image upload fails, delete the property
+                await prisma.property.delete({
+                    where: { id: property.id }
+                });
+                throw new Error('Failed to upload images: ' + error.message);
+            }
+        }
+
+        // Handle file uploads if any
+        if (req.files && req.files.files) {
+            console.log('Processing', req.files.files.length, 'files');
+            const filePromises = req.files.files.map(async (file) => {
+                try {
+                    console.log('Uploading file:', file.originalname);
+                    const fileUrl = await uploadFileToS3(file, property.id, 'files');
+                    console.log('File uploaded successfully:', fileUrl);
+                    return {
+                        name: file.originalname,
+                        url: fileUrl,
+                        type: file.mimetype,
+                        size: file.size
+                    };
+                } catch (error) {
+                    console.error('Error uploading file:', file.originalname, error);
+                    throw error;
+                }
+            });
+
+            try {
+                const uploadedFiles = await Promise.all(filePromises);
+                // Update property with file references
+                await prisma.property.update({
+                    where: { id: property.id },
+                    data: {
+                        files: JSON.stringify(uploadedFiles)
+                    }
+                });
+                console.log('All files processed successfully');
+            } catch (error) {
+                console.error('Error processing files:', error);
+                // If file upload fails, delete the property
+                await prisma.property.delete({
+                    where: { id: property.id }
+                });
+                throw new Error('Failed to upload files: ' + error.message);
+            }
+        }
+
+        // Get the complete property with images and files
+        const completeProperty = await prisma.property.findUnique({
+            where: { id: property.id },
+            include: {
+                images: true
+            }
+        });
+
+        res.status(201).json(completeProperty);
     } catch (err) {
+        console.error('Error creating property:', err);
         next(err);
     }
 });
@@ -154,19 +344,30 @@ router.post('/', upload.array('images', 10), validateProperty, async (req, res, 
 router.put('/:id', validateProperty, async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { name, sqf, beds, baths, price, rating } = req.body;
+        const updateData = req.body;
 
-        const result = await pool.query(
-            'UPDATE properties SET name = $1, sqf = $2, beds = $3, baths = $4, price = $5, rating = $6 WHERE id = $7 RETURNING *',
-            [name, sqf, beds, baths, price, rating, id]
-        );
+        // Convert numeric fields
+        if (updateData.latitude) updateData.latitude = parseFloat(updateData.latitude);
+        if (updateData.longitude) updateData.longitude = parseFloat(updateData.longitude);
+        if (updateData.price) updateData.price = parseFloat(updateData.price);
+        if (updateData.discountedPrice) updateData.discountedPrice = parseFloat(updateData.discountedPrice);
 
-        if (result.rows.length === 0) {
+        const property = await prisma.property.update({
+            where: { id: parseInt(id) },
+            data: updateData,
+            include: {
+                images: true,
+                floorplans: true
+            }
+        });
+
+        if (!property) {
             return res.status(404).json({ error: 'Property not found' });
         }
 
-        res.json(result.rows[0]);
+        res.json(property);
     } catch (err) {
+        console.error('Error updating property:', err);
         next(err);
     }
 });
@@ -175,14 +376,15 @@ router.put('/:id', validateProperty, async (req, res, next) => {
 router.delete('/:id', async (req, res, next) => {
     try {
         const { id } = req.params;
-        const result = await pool.query('DELETE FROM properties WHERE id = $1 RETURNING *', [id]);
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Property not found' });
-        }
+        
+        // Delete related records first (Prisma will handle this with cascade)
+        await prisma.property.delete({
+            where: { id: parseInt(id) }
+        });
 
         res.json({ message: 'Property deleted successfully' });
     } catch (err) {
+        console.error('Error deleting property:', err);
         next(err);
     }
 });

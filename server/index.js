@@ -4,7 +4,7 @@ const path = require('path');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const { Pool } = require('pg');
-const { upload, deleteFile, getSignedUrl, uploadImageToS3 } = require('./services/s3Service');
+const { uploadImages, uploadFiles, deleteFile, getSignedUrl, uploadFileToS3 } = require('./services/s3Service');
 const { S3Client, ListObjectsV2Command } = require('@aws-sdk/client-s3');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
@@ -59,10 +59,10 @@ app.get('/health', (req, res) => {
 app.get('/api/test-aws', async (req, res) => {
     try {
         console.log('AWS Configuration:');
-        console.log('Access Key ID:', process.env.AWS_ACCESS_KEY_ID ? '✓ Set' : '✗ Missing');
-        console.log('Secret Access Key:', process.env.AWS_SECRET_ACCESS_KEY ? '✓ Set' : '✗ Missing');
-        console.log('Region:', process.env.AWS_REGION || 'eu-central-1');
-        console.log('Bucket:', process.env.AWS_BUCKET_NAME || 'realitypuchyr-estate-photos');
+        // console.log('Access Key ID:', process.env.AWS_ACCESS_KEY_ID ? '✓ Set' : '✗ Missing');
+        // console.log('Secret Access Key:', process.env.AWS_SECRET_ACCESS_KEY ? '✓ Set' : '✗ Missing');
+        // console.log('Region:', process.env.AWS_REGION || 'eu-central-1');
+        // console.log('Bucket:', process.env.AWS_BUCKET_NAME || 'realitypuchyr-estate-photos');
 
         // Test S3 bucket access
         const s3Client = new S3Client({
@@ -96,33 +96,35 @@ app.get('/api/test-aws', async (req, res) => {
 });
 
 // Create new property
-app.post('/api/properties', upload.array('images', 10), async (req, res) => {
+app.post('/api/properties', uploadImages.array('images', 10), uploadFiles.array('files', 10), async (req, res) => {
     try {
         console.log('Received request body:', req.body);
+        console.log('Received images:', req.files);
         console.log('Received files:', req.files);
         
-        const { name, sqf, beds, baths, price, rating, featuredImageIndex } = req.body;
+        const { name, sqf, beds, baths, price, layout, virtual_tour } = req.body;
         
-        // First create the property without images
+        // First create the property without images and files
         const result = await pool.query(
-            'INSERT INTO properties (name, image, sqf, beds, baths, price, rating) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-            [name, 'pending', sqf, beds, baths, price, rating]
+            'INSERT INTO properties (name, image, sqf, beds, baths, price, layout, virtual_tour, files) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
+            [name, 'pending', sqf, beds, baths, price, layout, virtual_tour, '[]']
         );
 
         const propertyId = result.rows[0].id;
         let featuredImageUrl = null;
+        const uploadedFiles = [];
 
-        // If there are images, upload them to S3
+        // Handle image uploads
         if (req.files && req.files.length > 0) {
             const imageUrls = [];
             
             // Upload all images
             for (let i = 0; i < req.files.length; i++) {
-                const imageUrl = await uploadImageToS3(req.files[i], propertyId);
+                const imageUrl = await uploadFileToS3(req.files[i], propertyId, 'images');
                 imageUrls.push(imageUrl);
                 
                 // If this is the featured image, save its URL
-                if (i === parseInt(featuredImageIndex)) {
+                if (i === parseInt(req.body.featuredImageIndex || 0)) {
                     featuredImageUrl = imageUrl;
                 }
             }
@@ -142,26 +144,43 @@ app.post('/api/properties', upload.array('images', 10), async (req, res) => {
                     [propertyId, imageUrl, imageUrl === featuredImageUrl]
                 );
             }
-
-            // Get updated property with images
-            const updatedProperty = await pool.query(
-                `SELECT p.*, 
-                    json_agg(json_build_object(
-                        'id', pi.id,
-                        'url', pi.image_url,
-                        'is_featured', pi.is_featured
-                    )) as images
-                FROM properties p
-                LEFT JOIN property_images pi ON p.id = pi.property_id
-                WHERE p.id = $1
-                GROUP BY p.id`,
-                [propertyId]
-            );
-
-            res.status(201).json(updatedProperty.rows[0]);
-        } else {
-            res.status(201).json(result.rows[0]);
         }
+
+        // Handle file uploads
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                const fileUrl = await uploadFileToS3(file, propertyId, 'files');
+                uploadedFiles.push({
+                    name: file.originalname,
+                    url: fileUrl,
+                    type: file.mimetype,
+                    size: file.size
+                });
+            }
+
+            // Update property with the file references
+            await pool.query(
+                'UPDATE properties SET files = $1 WHERE id = $2',
+                [JSON.stringify(uploadedFiles), propertyId]
+            );
+        }
+
+        // Get updated property with images and files
+        const updatedProperty = await pool.query(
+            `SELECT p.*, 
+                json_agg(json_build_object(
+                    'id', pi.id,
+                    'url', pi.image_url,
+                    'is_featured', pi.is_featured
+                )) as images
+            FROM properties p
+            LEFT JOIN property_images pi ON p.id = pi.property_id
+            WHERE p.id = $1
+            GROUP BY p.id`,
+            [propertyId]
+        );
+
+        res.status(201).json(updatedProperty.rows[0]);
     } catch (err) {
         console.error('Detailed error in /api/properties POST:', {
             message: err.message,
@@ -179,7 +198,7 @@ app.post('/api/properties', upload.array('images', 10), async (req, res) => {
 });
 
 // Upload property image
-app.post('/api/properties/:id/image', upload.single('image'), async (req, res) => {
+app.post('/api/properties/:id/image', uploadImages.single('image'), async (req, res) => {
     try {
         const { id } = req.params;
         
@@ -187,7 +206,7 @@ app.post('/api/properties/:id/image', upload.single('image'), async (req, res) =
             return res.status(400).json({ error: 'No file uploaded' });
         }
 
-        const imageUrl = await uploadImageToS3(req.file, id);
+        const imageUrl = await uploadFileToS3(req.file, id, 'images');
 
         // Update property with new image URL
         const result = await pool.query(

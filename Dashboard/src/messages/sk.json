@@ -1,0 +1,25 @@
+{
+  "common": {
+    "welcome": "Vitajte",
+    "home": "Domov",
+    "properties": "Nehnuteľnosti",
+    "about": "O nás",
+    "contact": "Kontakt",
+    "login": "Prihlásiť sa",
+    "register": "Registrovať sa",
+    "search": "Hľadať",
+    "language": "Jazyk"
+  },
+  "home": {
+    "hero": {
+      "title": "Nájdite Svoj Senový Domov",
+      "subtitle": "Objavte perfektnú nehnuteľnosť, ktorá zodpovedá vášmu životnému štýlu"
+    }
+  },
+  "properties": {
+    "title": "Naše Nehnuteľnosti",
+    "filter": "Filtrovať Nehnuteľnosti",
+    "sort": "Zoradiť Podľa",
+    "view": "Zobraziť Detaily"
+  }
+} 

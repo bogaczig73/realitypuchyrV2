@@ -1,29 +1,7 @@
 import axios from 'axios';
+import { Property, Pagination, PaginatedResponse } from '@/types/property';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003/api';
-
-export interface Property {
-  id: number;
-  name: string;
-  image: string;
-  sqf: string;
-  beds: string;
-  baths: string;
-  price: number;
-  rating: number;
-  review_count: number;
-  created_at: string;
-}
-
-export interface PaginatedResponse {
-  properties: Property[];
-  pagination: {
-    total: number;
-    pages: number;
-    currentPage: number;
-    limit: number;
-  };
-}
 
 export const propertyApi = {
   getAll: async (page = 1, limit = 12, search = ''): Promise<PaginatedResponse> => {

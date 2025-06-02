@@ -1,0 +1,25 @@
+{
+  "common": {
+    "welcome": "Welcome",
+    "home": "Home",
+    "properties": "Properties",
+    "about": "About",
+    "contact": "Contact",
+    "login": "Login",
+    "register": "Register",
+    "search": "Search",
+    "language": "Language"
+  },
+  "home": {
+    "hero": {
+      "title": "Find Your Dream Home",
+      "subtitle": "Discover the perfect property that matches your lifestyle"
+    }
+  },
+  "properties": {
+    "title": "Our Properties",
+    "filter": "Filter Properties",
+    "sort": "Sort By",
+    "view": "View Details"
+  }
+} 

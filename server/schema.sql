@@ -7,13 +7,14 @@ CREATE TABLE IF NOT EXISTS properties (
     beds VARCHAR(50) NOT NULL,
     baths VARCHAR(50) NOT NULL,
     price DECIMAL(10, 2) NOT NULL,
-    rating DECIMAL(3, 1) NOT NULL,
-    review_count INTEGER NOT NULL DEFAULT 0,
+    layout VARCHAR(255),
+    virtual_tour TEXT,
+    files JSONB DEFAULT '[]',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Insert sample data if table is empty
-INSERT INTO properties (name, image, sqf, beds, baths, price, rating, review_count)
+INSERT INTO properties (name, image, sqf, beds, baths, price, layout, virtual_tour, files)
 SELECT 
     '10765 Hillshire Ave, Baton Rouge, LA 70810, USA',
     'https://example.com/property1.jpg',
@@ -21,6 +22,7 @@ SELECT
     '4 Beds',
     '4 Baths',
     5000.00,
-    5.0,
-    30
+    'Modern',
+    '<iframe src="https://example.com/virtual-tour" width="100%" height="400"></iframe>',
+    '[]'
 WHERE NOT EXISTS (SELECT 1 FROM properties LIMIT 1); 

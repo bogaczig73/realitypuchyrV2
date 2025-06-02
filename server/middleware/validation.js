@@ -1,33 +1,26 @@
 const validateProperty = (req, res, next) => {
-    const { name, sqf, beds, baths, price, rating } = req.body;
+    const { name, price } = req.body;
     const errors = [];
 
-    if (!name || typeof name !== 'string' || name.trim().length === 0) {
-        errors.push('Name is required and must be a non-empty string');
+    // Validate required fields
+    if (!name) {
+        errors.push('Name is required');
     }
 
-    if (!sqf || isNaN(sqf) || sqf <= 0) {
-        errors.push('Square footage must be a positive number');
-    }
-
-    if (!beds || isNaN(beds) || beds < 0) {
-        errors.push('Number of bedrooms must be a non-negative number');
-    }
-
-    if (!baths || isNaN(baths) || baths < 0) {
-        errors.push('Number of bathrooms must be a non-negative number');
-    }
-
-    if (!price || isNaN(price) || price <= 0) {
+    if (!price) {
+        errors.push('Price is required');
+    } else if (isNaN(parseFloat(price)) || parseFloat(price) <= 0) {
         errors.push('Price must be a positive number');
     }
 
-    if (rating && (isNaN(rating) || rating < 0 || rating > 5)) {
-        errors.push('Rating must be a number between 0 and 5');
-    }
-
+    // If there are any errors, return them
     if (errors.length > 0) {
-        return res.status(400).json({ errors });
+        console.log('Validation errors:', errors);
+        console.log('Request body:', req.body);
+        return res.status(400).json({ 
+            error: 'Validation failed',
+            details: errors
+        });
     }
 
     next();
