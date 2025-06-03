@@ -3,9 +3,9 @@
 import React, { useState } from "react";
 import Link from "next/link";
 
-import Wrapper from "../components/wrapper";
-import ImageUpload from "../components/imageUpload";
-import FileUpload from "../components/FileUpload";
+import Wrapper from "@/components/wrapper";
+import ImageUpload from "@/components/imageUpload";
+import FileUpload from "@/components/FileUpload";
 
 export default function AddProperty(){
     const [formData, setFormData] = useState({
@@ -101,12 +101,14 @@ export default function AddProperty(){
                     }
                 }
             });
-            console.log('Form data to send:', formDataToSend);
+
             // Get the image files from the ImageUpload component
             const imageInput = document.querySelector('input[name="images"]') as HTMLInputElement;
             if (imageInput && imageInput.files) {
-                Array.from(imageInput.files).forEach((file) => {
+                Array.from(imageInput.files).forEach((file, index) => {
                     formDataToSend.append('images', file);
+                    // Add isMain flag for each image
+                    formDataToSend.append('imageMainFlags', index === 0 ? 'true' : 'false');
                 });
             }
 

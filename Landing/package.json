@@ -1,10 +1,10 @@
 {
-  "name": "hously",
+  "name": "realitypuchyr",
   "version": "2.5.0",
-  "description": "Hously - Next Js Real Estate Landing & Admin Dashboard Template",
+  "description": "RealityPuchyr - Next Js Real Estate Landing Page",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -12,6 +12,7 @@
   "dependencies": {
     "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/postcss": "^4.0.17",
+    "axios": "^1.9.0",
     "next": "15.2.4",
     "react": "^19.1.0",
     "react-countup": "^6.5.3",

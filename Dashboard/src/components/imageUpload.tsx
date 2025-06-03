@@ -5,6 +5,7 @@ import Image from "next/image";
 export default function ImageUpload() {
     const [files, setFiles] = useState<File[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
+    const [mainImageIndex, setMainImageIndex] = useState<number | null>(null);
 
     function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
         if (e.target.files && e.target.files.length > 0) {
@@ -21,6 +22,11 @@ export default function ImageUpload() {
                 }
             });
             setPreviews(prev => [...prev, ...newPreviews]);
+
+            // If this is the first image, set it as main
+            if (previews.length === 0) {
+                setMainImageIndex(0);
+            }
         }
     }
 
@@ -33,6 +39,18 @@ export default function ImageUpload() {
             }
             return prev.filter((_, i) => i !== index);
         });
+
+        // If we're removing the main image, set the first remaining image as main
+        if (index === mainImageIndex) {
+            setMainImageIndex(files.length > 1 ? 0 : null);
+        } else if (index < mainImageIndex!) {
+            // If we remove an image before the main image, adjust the main image index
+            setMainImageIndex(mainImageIndex! - 1);
+        }
+    }
+
+    function setMainImage(index: number) {
+        setMainImageIndex(index);
     }
 
     return (
@@ -48,20 +66,37 @@ export default function ImageUpload() {
                                 alt={`Preview ${index + 1}`} 
                                 fill
                                 style={{ objectFit: 'cover' }}
-                                className="rounded-lg"
+                                className={`rounded-lg ${mainImageIndex === index ? 'ring-2 ring-green-500' : ''}`}
                                 onError={(e) => {
                                     const target = e.target as HTMLImageElement;
                                     target.src = '/placeholder-image.jpg';
                                 }}
                             />
+                            {mainImageIndex === index && (
+                                <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded text-sm">
+                                    Main Image
+                                </div>
+                            )}
                         </div>
-                        <button
-                            type="button"
-                            onClick={() => removeFile(index)}
-                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
-                        >
-                            ×
-                        </button>
+                        <div className="absolute top-2 right-2 flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setMainImage(index)}
+                                className={`bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-green-600 ${mainImageIndex === index ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                disabled={mainImageIndex === index}
+                                title="Set as main image"
+                            >
+                                ★
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => removeFile(index)}
+                                className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                                title="Remove image"
+                            >
+                                ×
+                            </button>
+                        </div>
                     </div>
                 ))}
             </div>

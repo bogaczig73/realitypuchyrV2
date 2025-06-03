@@ -98,9 +98,11 @@ const uploadPropertyFiles = (req, res, next) => {
 };
 
 // Function to upload file to S3
-const uploadFileToS3 = async (file, propertyId, type) => {
+const uploadFileToS3 = async (file, propertyId, type, index = 0) => {
     const fileExtension = path.extname(file.originalname);
-    const key = `${type}/${propertyId}/${Date.now()}${fileExtension}`;
+    // Format index as 3-digit number (001, 002, etc.)
+    const paddedIndex = String(index + 1).padStart(3, '0');
+    const key = `${type}/${propertyId}/${propertyId}_${paddedIndex}${fileExtension}`;
 
     const upload = new Upload({
         client: s3Client,

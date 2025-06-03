@@ -65,17 +65,6 @@ const changeMode = (mode:'mode' | 'layout', event:React.MouseEvent<HTMLElement>)
 
             {/* <!-- Switcher --> */}
 
-            {/* <!-- LTR & RTL Mode Code --> */}
-            <div className="fixed top-[40%] -left-3 z-50">
-                <Link href="#" id="switchRtl">
-                    <span className="py-1 px-3 relative inline-block rounded-b-md -rotate-90 bg-white dark:bg-slate-900 shadow-md dark:shadow-sm dark:shadow-gray-800 font-semibold rtl:block ltr:hidden" onClick={(event) => changeMode('layout', event)}>LTR</span>
-                    <span className="py-1 px-3 relative inline-block rounded-b-md -rotate-90 bg-white dark:bg-slate-900 shadow-md dark:shadow-sm dark:shadow-gray-800 font-semibold ltr:block rtl:hidden" onClick={(event) => changeMode('layout', event)}>RTL</span>
-                </Link>
-            </div>
-
-            <Link  href="#" onClick={scrollToTop}
-                id="back-to-top" className={`${!scrollToTops ? "hidden":"back-to-top fixed text-lg !rounded-full z-10 bottom-5 end-5 h-9 w-9 text-center bg-green-600 text-white justify-center items-center flex"}`}><FiArrowUp width={18}/></Link>
-            {/* <!-- LTR & RTL Mode Code --> */}
 
         </>
     );

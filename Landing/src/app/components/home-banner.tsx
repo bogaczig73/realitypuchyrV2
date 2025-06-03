@@ -7,8 +7,7 @@ const TinySlider = dynamic(()=>import('tiny-slider-react'),{ssr:false})
 import 'tiny-slider/dist/tiny-slider.css';
 import Image from 'next/image'
 import { partnerData } from '../data/data'
-
-let images = ['/images/property/1.jpg','/images/property/2.jpg','/images/property/4.jpg']
+const heroimage = '/images/agency/pavel.webp'
 
 export default function HomeBanner() {
     const settings = {
@@ -46,15 +45,10 @@ export default function HomeBanner() {
                     <div className="!rounded-full shadow-lg shadow-gray-200 dark:shadow-gray-800 relative overflow-hidden border-8 border-white dark:border-slate-900">
                         <div className="grid grid-cols-1 relative">
                             <div className="tiny-single">
-                                <TinySlider settings={settings}>
-                                    {images.map((item,index)=>{
-                                        return(
-                                            <div className="tiny-slide" key={index}>
-                                                <img src={item} className="object-cover w-full lg:h-[600px] md:h-[500px]" alt=""/>
-                                            </div>
-                                        )
-                                    })}
-                                </TinySlider>
+                                
+                                <div className="tiny-slide">
+                                    <img src={heroimage} className="object-cover w-full lg:h-[600px] md:h-[500px]" alt=""/>
+                                </div>
                             </div>
                         </div>
                     </div>

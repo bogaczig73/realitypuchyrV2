@@ -117,14 +117,18 @@ app.post('/api/properties', uploadImages.array('images', 10), uploadFiles.array(
         // Handle image uploads
         if (req.files && req.files.length > 0) {
             const imageUrls = [];
+            const imageMainFlags = req.body.imageMainFlags ? 
+                (Array.isArray(req.body.imageMainFlags) ? req.body.imageMainFlags : [req.body.imageMainFlags]) : 
+                [];
             
             // Upload all images
             for (let i = 0; i < req.files.length; i++) {
-                const imageUrl = await uploadFileToS3(req.files[i], propertyId, 'images');
+                const imageUrl = await uploadFileToS3(req.files[i], propertyId, 'images', i);
                 imageUrls.push(imageUrl);
                 
-                // If this is the featured image, save its URL
-                if (i === parseInt(req.body.featuredImageIndex || 0)) {
+                // Check if this image should be the main image
+                const isMain = imageMainFlags[i] === 'true';
+                if (isMain) {
                     featuredImageUrl = imageUrl;
                 }
             }
@@ -138,10 +142,11 @@ app.post('/api/properties', uploadImages.array('images', 10), uploadFiles.array(
             }
 
             // Save all image URLs to the property_images table
-            for (const imageUrl of imageUrls) {
+            for (let i = 0; i < imageUrls.length; i++) {
+                const isMain = imageMainFlags[i] === 'true';
                 await pool.query(
-                    'INSERT INTO property_images (property_id, image_url, is_featured) VALUES ($1, $2, $3)',
-                    [propertyId, imageUrl, imageUrl === featuredImageUrl]
+                    'INSERT INTO property_images (property_id, image_url, is_main) VALUES ($1, $2, $3)',
+                    [propertyId, imageUrls[i], isMain]
                 );
             }
         }
@@ -171,7 +176,7 @@ app.post('/api/properties', uploadImages.array('images', 10), uploadFiles.array(
                 json_agg(json_build_object(
                     'id', pi.id,
                     'url', pi.image_url,
-                    'is_featured', pi.is_featured
+                    'isMain', pi.is_main
                 )) as images
             FROM properties p
             LEFT JOIN property_images pi ON p.id = pi.property_id
