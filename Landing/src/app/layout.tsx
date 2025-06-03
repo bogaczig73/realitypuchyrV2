@@ -11,8 +11,8 @@ const league_Spartan = League_Spartan({
 })
 
 export const metadata = {
-  title: 'Hously - Next Js Real Estate Landing & Admin Dashboard Template',
-  description: 'Hously - Next Js Real Estate Landing & Admin Dashboard Template',
+  title: 'Pavel Puchýř - Real Estate',
+  description: 'Pavel Puchýř - Real estate for everyone',
 };
 
 export default function RootLayout({

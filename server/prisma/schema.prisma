@@ -70,6 +70,7 @@ model Property {
   updatedAt                   DateTime            @updatedAt @map("updated_at")
   floorplans                  PropertyFloorplan[]
   images                      PropertyImage[]
+  reviews                     Review[]
 
   @@map("properties")
 }
@@ -118,4 +119,17 @@ enum PropertyStatus {
 enum OwnershipType {
   RENT
   OWNERSHIP
+}
+
+model Review {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String
+  rating      Int      // Will store rating from 1-5
+  propertyId  Int?     @map("property_id")
+  property    Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("reviews")
 }

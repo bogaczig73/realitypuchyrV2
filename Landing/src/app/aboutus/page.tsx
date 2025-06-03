@@ -4,7 +4,7 @@ import Navbar from "../components/navbar";
 
 import Footer from "../components/footer";
 import Feature from "../components/feature";
-import About from "../components/about";
+import About from "../components/about-our-cooperation";
 import GetInTuch from "../components/get-in-touch";
 import ClientTwo from "../components/client-two";
 import Team from "../components/team";

@@ -481,19 +481,19 @@ export const pricingPlan = [
 export const aboutData = [
     {
         image:'/images/rent.png',
-        title:'Rent a House',
-        desc:`If the distribution of letters and 'words' is random, the reader will not be distracted from making.`
+        title:'Offer visibility',
+        desc:`Thanks to my cooperation with Broker Consulting a.s., an established real estate agency, your property will be visible. It will appear on all major portals with regular visibility for the highest reach.`
     },
     {
         image:'/images/buy.png',
-        title:'Buy a House',
-        desc:`If the distribution of letters and 'words' is random, the reader will not be distracted from making.`
+        title:'Virtual tours',
+        desc:`Experience from the comfort of your home. In the case of an exclusive contract, you also get a 3D matterport tour - the most modern sales method that literally simulates a real property walk.`
     },
     {
         image:'/images/sell.png',
-        title:'Sell a House',
-        desc:`If the distribution of letters and 'words' is random, the reader will not be distracted from making.`
-    },
+        title:'Sophisticated promotion',
+        desc:`Home staging, paid social media promotion and targeted marketing for the luxury real estate segment. We use digital marketing to reach the target group of buyers.`
+    }
 ]
 export const partnerData = [
     '/images/client/amazon.svg',

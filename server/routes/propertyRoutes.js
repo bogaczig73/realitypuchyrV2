@@ -73,6 +73,31 @@ router.post('/test-upload', uploadPropertyFiles, async (req, res) => {
     }
 });
 
+// Get property statistics
+router.get('/stats', async (req, res, next) => {
+    try {
+        const activeProperties = await prisma.property.count({
+            where: { status: 'ACTIVE' }
+        });
+
+        const soldProperties = await prisma.property.count({
+            where: { status: 'SOLD' }
+        });
+
+        // Years of experience is hardcoded since it's a fixed value
+        const yearsOfExperience = 5;
+
+        res.json({
+            activeProperties,
+            soldProperties,
+            yearsOfExperience
+        });
+    } catch (err) {
+        console.error('Error fetching property statistics:', err);
+        next(err);
+    }
+});
+
 // Get all properties with pagination and search
 router.get('/', async (req, res, next) => {
     try {
@@ -143,6 +168,48 @@ router.get('/', async (req, res, next) => {
         });
     } catch (err) {
         console.error('Error fetching properties:', err);
+        next(err);
+    }
+});
+
+// Get properties with video tours for carousel
+router.get('/video-tours', async (req, res, next) => {
+    try {
+        const properties = await prisma.property.findMany({
+            where: {
+                videoUrl: {
+                    not: null
+                }
+            },
+            select: {
+                id: true,
+                name: true,
+                videoUrl: true,
+                images: {
+                    where: {
+                        isMain: true
+                    },
+                    take: 1,
+                    select: {
+                        url: true
+                    }
+                }
+            },
+            take: 6 // Limit to 6 properties for the carousel
+        });
+
+        // Convert S3 URLs to CloudFront URLs
+        const propertiesWithCloudFrontUrls = properties.map(property => ({
+            ...property,
+            images: property.images.map(image => ({
+                ...image,
+                url: convertToCloudFrontUrl(image.url)
+            }))
+        }));
+
+        res.json(propertiesWithCloudFrontUrls);
+    } catch (err) {
+        console.error('Error fetching properties with video tours:', err);
         next(err);
     }
 });

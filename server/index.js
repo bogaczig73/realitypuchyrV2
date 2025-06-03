@@ -12,6 +12,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const propertyRoutes = require('./routes/propertyRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const categoriesRouter = require('./routes/categories');
+const reviewRoutes = require('./routes/reviewRoutes');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -38,9 +39,10 @@ pool.connect((err, client, release) => {
 // Middleware
 app.use(helmet()); // Security headers
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: '*', // More permissive for development
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
 }));
 app.use(express.json());
 app.use(morgan('dev')); // Logging
@@ -55,6 +57,7 @@ app.use((req, res, next) => {
 app.use('/api/properties', propertyRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/categories', categoriesRouter);
+app.use('/api/reviews', reviewRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

@@ -6,7 +6,8 @@ import dynamic from 'next/dynamic'
 const TinySlider = dynamic(()=>import('tiny-slider-react'),{ssr:false})
 import 'tiny-slider/dist/tiny-slider.css';
 import Image from 'next/image'
-import { partnerData } from '../data/data'
+import { counterData, partnerData } from '../data/data'
+import Counter from './counter'
 const heroimage = '/images/agency/pavel.webp'
 
 export default function HomeBanner() {
@@ -33,7 +34,7 @@ export default function HomeBanner() {
             <div className="grid md:grid-cols-12 grid-cols-1 items-center gap-[30px]">
                 <div className="md:col-span-4">
                     <div className="md:text-start text-center">
-                        <h1 className="font-bold lg:leading-normal leading-normal text-4xl lg:text-5xl">Lets Find a Home Thats Perfect For You!</h1>
+                        <h1 className="font-bold lg:leading-normal leading-normal text-4xl lg:text-5xl">Rest assured that everything will turn out well!</h1>
 
                         <div className="mt-4">
                             <Link href="#" className="btn bg-green-600 hover:bg-green-700 text-white rounded-md md:mt-20">Learn More <i className="mdi mdi-arrow-right ms-1 align-middle"></i></Link>
@@ -47,7 +48,7 @@ export default function HomeBanner() {
                             <div className="tiny-single">
                                 
                                 <div className="tiny-slide">
-                                    <img src={heroimage} className="object-cover w-full lg:h-[600px] md:h-[500px]" alt=""/>
+                                    <img src={heroimage} className="object-cover w-full lg:h-[600px] md:h-[500px]" alt="" fetchPriority="high"/>
                                 </div>
                             </div>
                         </div>
@@ -56,23 +57,14 @@ export default function HomeBanner() {
 
                 <div className="md:col-span-3">
                     <div className="md:text-end text-center">
-                        <p className="text-slate-400 text-xl max-w-xl">A great plateform to buy, sell and rent your properties without any agent or commisions.</p>
-
-                        <div className="mt-4">
-                            <ul className="list-none relative md:mt-20">
-                                <li className="inline-block relative"><Link href="#"><Image src='/images/client/01.jpg' width={48} height={48} className="size-12 !rounded-full shadow-md shadow-slate-100 dark:shadow-slate-800 border-4 border-white dark:border-slate-900 relative hover:z-1 hover:scale-105 transition-all duration-500" alt=""/></Link></li>
-                                <li className="inline-block relative -ms-4"><Link href="#"><Image src='/images/client/02.jpg' width={48} height={48} className="size-12 !rounded-full shadow-md shadow-slate-100 dark:shadow-slate-800 border-4 border-white dark:border-slate-900 relative hover:z-1 hover:scale-105 transition-all duration-500" alt=""/></Link></li>
-                                <li className="inline-block relative -ms-4"><Link href="#"><Image src='/images/client/03.jpg' width={48} height={48} className="size-12 !rounded-full shadow-md shadow-slate-100 dark:shadow-slate-800 border-4 border-white dark:border-slate-900 relative hover:z-1 hover:scale-105 transition-all duration-500" alt=""/></Link></li>
-                                <li className="inline-block relative -ms-4"><Link href="#"><Image src='/images/client/04.jpg' width={48} height={48} className="size-12 !rounded-full shadow-md shadow-slate-100 dark:shadow-slate-800 border-4 border-white dark:border-slate-900 relative hover:z-1 hover:scale-105 transition-all duration-500" alt=""/></Link></li>
-                                <li className="inline-block relative -ms-4"><Link href="#"><Image src='/images/client/05.jpg' width={48} height={48} className="size-12 !rounded-full shadow-md shadow-slate-100 dark:shadow-slate-800 border-4 border-white dark:border-slate-900 relative hover:z-1 hover:scale-105 transition-all duration-500" alt=""/></Link></li>
-                            </ul>
-                        </div>
+                        <p className="text-slate-400 text-xl max-w-xl">"With over 5 years of experience in Prague real estate, I build successful partnerships through honesty, diligence, and mutual trust between buyers and sellers."</p>
+                        <p className="text-green-600 font-semibold text-xl mt-4">- Pavel Puchýř</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <section className="pt-10">
+        {/* <section className="pt-10">
             <div className="container relative">
                 <div className="grid md:grid-cols-6 grid-cols-2 justify-center gap-[30px]">
                     {partnerData.map((item:string,index:number)=>{
@@ -84,7 +76,8 @@ export default function HomeBanner() {
                     })}
                 </div>
             </div>
-        </section>
+        </section> */}
+        
     </section>
     </>
   )

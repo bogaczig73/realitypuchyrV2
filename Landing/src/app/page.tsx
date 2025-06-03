@@ -4,13 +4,17 @@ import HomeBanner from './components/home-banner'
 import { aboutData, blogList, teamData } from './data/data'
 import { FiArrowRight, FiCalendar, FiClock, FiFacebook, FiHexagon, FiInstagram, FiLinkedin } from 'react-icons/fi'
 import Link from 'next/link'
-import About from './components/about'
+import OurCooperation from './components/about-our-cooperation'
+import AboutVideoTour from './components/about-video-tour'
 import Categories from './components/categories'
 import Property from './components/property'
 import ClientTwo from './components/client-two'
 import GetInTuch from './components/get-in-touch'
 import Footer from './components/footer'
 import Switcher from './components/switcher'
+import Counter from './components/counter'
+import CounterSection from './components/counter-section'
+import AboutOurCooperation from './components/about-our-cooperation'
 
 interface AboutData{
     image: string;
@@ -30,13 +34,13 @@ export default function Page() {
     <>
      <Navbar navClass={''} topnavClass={''} tagline={false}/>
      <HomeBanner/>   
-
+    
      <section className="relative md:pb-24 pb-16">
             <div className="container relative">
                 <div className="grid grid-cols-1 pb-8 text-center">
-                    <h3 className="mb-4 md:text-3xl md:leading-normal text-2xl leading-normal font-semibold">What We Do?</h3>
+                    <h3 className="mb-4 md:text-3xl md:leading-normal text-2xl leading-normal font-semibold">What Do I Do?</h3>
 
-                    <p className="text-slate-400 max-w-xl mx-auto">A great plateform to buy, sell and rent your properties without any agent or commisions.</p>
+                    <p className="text-slate-400 max-w-xl mx-auto">I take care of my clients' assets—providing expert broker consulting to protect and grow their wealth.</p>
                 </div>
 
                 <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 mt-8 gap-[30px]">
@@ -66,18 +70,20 @@ export default function Page() {
                 </div>
             </div>
 
-            <About/>
+            <AboutOurCooperation/>
+            <AboutVideoTour/>
 
+        </section>
+        <CounterSection/>
+
+        <section className="relative md:pb-24 pb-16">
             <div className="container relative md:mt-24 mt-16">
                 <div className="grid grid-cols-1 pb-8">
                     <h3 className="mb-4 md:text-3xl md:leading-normal text-2xl leading-normal font-semibold">Listing Categories</h3>
-
-                    <p className="text-slate-400 max-w-xl">A great plateform to buy, sell and rent your properties without any agent or commisions.</p>
                 </div>
 
                 <Categories/>
             </div>
-
             <Property/>
 
             <ClientTwo/>

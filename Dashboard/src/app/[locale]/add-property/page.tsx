@@ -87,7 +87,7 @@ export default function AddProperty(){
         // Fetch categories when component mounts
         const fetchCategories = async () => {
             try {
-                const response = await fetch('http://localhost:3003/api/categories');
+                const response = await fetch('http://localhost:3001/api/categories');
                 if (!response.ok) {
                     throw new Error('Failed to fetch categories');
                 }
@@ -160,7 +160,7 @@ export default function AddProperty(){
             });
 
             // Send the request
-            const response = await fetch('http://localhost:3003/api/properties', {
+            const response = await fetch('http://localhost:3001/api/properties', {
                 method: 'POST',
                 body: formDataToSend,
                 // Remove the Content-Type header to let the browser set it with the boundary
