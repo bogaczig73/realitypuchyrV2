@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
-const { uploadPropertyFiles, uploadFileToS3 } = require('../services/s3Service');
+const { uploadPropertyFiles, uploadFileToS3, deleteFile } = require('../services/s3Service');
 const { validateProperty } = require('../middleware/validation');
 
 const prisma = new PrismaClient();
@@ -382,13 +382,48 @@ router.put('/:id', validateProperty, async (req, res, next) => {
 router.delete('/:id', async (req, res, next) => {
     try {
         const { id } = req.params;
-        
-        // Delete related records first (Prisma will handle this with cascade)
-        await prisma.property.delete({
-            where: { id: parseInt(id) }
+        const propertyId = parseInt(id);
+
+        // Get property with all related data before deletion
+        const property = await prisma.property.findUnique({
+            where: { id: propertyId },
+            include: {
+                images: true,
+                floorplans: true
+            }
         });
 
-        res.json({ message: 'Property deleted successfully' });
+        if (!property) {
+            return res.status(404).json({ error: 'Property not found' });
+        }
+
+        // Delete all images from S3
+        const imageDeletePromises = property.images.map(image => deleteFile(image.url));
+        await Promise.all(imageDeletePromises);
+
+        // Delete all floorplans from S3
+        const floorplanDeletePromises = property.floorplans.map(floorplan => deleteFile(floorplan.url));
+        await Promise.all(floorplanDeletePromises);
+
+        // Delete any files stored in the files JSON field
+        if (property.files) {
+            try {
+                const files = JSON.parse(property.files);
+                if (Array.isArray(files)) {
+                    const fileDeletePromises = files.map(file => deleteFile(file.url));
+                    await Promise.all(fileDeletePromises);
+                }
+            } catch (error) {
+                console.error('Error parsing property files:', error);
+            }
+        }
+
+        // Delete the property from the database (this will cascade delete related records)
+        await prisma.property.delete({
+            where: { id: propertyId }
+        });
+
+        res.json({ message: 'Property and all associated files deleted successfully' });
     } catch (err) {
         console.error('Error deleting property:', err);
         next(err);

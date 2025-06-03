@@ -21,6 +21,7 @@
     "filter": "Filter Properties",
     "sort": "Sort By",
     "view": "View Details",
+    "search": "Search",
     "details": {
       "title": "Property Details",
       "description": "Description",
@@ -108,7 +109,7 @@
   },
   "Sidebar": {
     "dashboard": "Dashboard",
-    "exploreProperties": "Explore Properties",
+    "properties": "Properties",
     "favoriteProperties": "Favorite Properties",
     "addProperties": "Add Properties",
     "chat": "Chat",

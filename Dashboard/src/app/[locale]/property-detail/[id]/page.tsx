@@ -3,18 +3,21 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import Wrapper from "@/components/wrapper";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { propertyApi, Property } from "@/services/api";
 import { useTranslations } from 'next-intl';
 
 export default function PropertyDetail() {
     const params = useParams();
+    const router = useRouter();
     const t = useTranslations('properties.details');
     const id = parseInt(String(params?.id || 0));
     const [property, setProperty] = useState<Property | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         const fetchProperty = async () => {
@@ -40,6 +43,24 @@ export default function PropertyDetail() {
             fetchProperty();
         }
     }, [id]);
+
+    const handleEdit = () => {
+        router.push(`/property-detail/${id}/edit`);
+    };
+
+    const handleDelete = async () => {
+        try {
+            setIsDeleting(true);
+            await propertyApi.delete(id);
+            router.push('/properties');
+        } catch (err) {
+            console.error('Error deleting property:', err);
+            setError('Failed to delete property. Please try again later.');
+        } finally {
+            setIsDeleting(false);
+            setShowDeleteModal(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -87,6 +108,21 @@ export default function PropertyDetail() {
                 <div className="layout-specing">
                     <div className="md:flex justify-between items-center">
                         <h5 className="text-lg font-semibold">{t('title')}</h5>
+
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={handleEdit}
+                                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                            >
+                                Edit Property
+                            </button>
+                            <button
+                                onClick={() => setShowDeleteModal(true)}
+                                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                            >
+                                Delete Property
+                            </button>
+                        </div>
 
                         <ul className="tracking-[0.5px] inline-block sm:mt-0 mt-3">
                             <li className="inline-block capitalize text-[16px] font-medium duration-500 dark:text-white/70 hover:text-green-600 dark:hover:text-white">
@@ -559,6 +595,34 @@ export default function PropertyDetail() {
                     </div>
                 </div>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-slate-900 p-6 rounded-lg max-w-md w-full">
+                        <h3 className="text-xl font-semibold mb-4">Confirm Delete</h3>
+                        <p className="text-gray-600 dark:text-gray-300 mb-6">
+                            Are you sure you want to delete this property? This action cannot be undone.
+                        </p>
+                        <div className="flex justify-end gap-4">
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
+                                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+                                disabled={isDeleting}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                                disabled={isDeleting}
+                            >
+                                {isDeleting ? 'Deleting...' : 'Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </Wrapper>
     );
 }

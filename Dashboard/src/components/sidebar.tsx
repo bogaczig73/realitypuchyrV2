@@ -33,8 +33,8 @@ export default function Sidebar(){
                             <Link href={`/${locale}`}><i className="mdi mdi-chart-bell-curve-cumulative me-2"></i>{t('dashboard')}</Link>
                         </li>
 
-                        <li className={`${manu === `/${locale}/explore-property` ? 'active' : ''} ms-0`}>
-                            <Link href={`/${locale}/explore-property`}><i className="mdi mdi-home-city me-2"></i>{t('exploreProperties')}</Link>
+                        <li className={`${manu === `/${locale}/properties` ? 'active' : ''} ms-0`}>
+                            <Link href={`/${locale}/properties`}><i className="mdi mdi-home-city me-2"></i>{t('properties')}</Link>
                         </li>
 
                         <li className={`${manu === `/${locale}/favorite-property` ? 'active' : ''} ms-0`}>
