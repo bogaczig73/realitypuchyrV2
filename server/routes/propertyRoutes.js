@@ -79,15 +79,26 @@ router.get('/', async (req, res, next) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 12;
         const search = req.query.search || '';
+        const status = req.query.status;
+        const categoryId = req.query.categoryId ? parseInt(req.query.categoryId) : undefined;
         const skip = (page - 1) * limit;
 
-        // Build where clause for search
-        const where = search ? {
-            OR: [
-                { name: { contains: search, mode: 'insensitive' } },
-                { description: { contains: search, mode: 'insensitive' } }
-            ]
-        } : {};
+        // Build where clause for search and filters
+        const where = {
+            AND: [
+                // Search in name and description
+                search ? {
+                    OR: [
+                        { name: { contains: search, mode: 'insensitive' } },
+                        { description: { contains: search, mode: 'insensitive' } }
+                    ]
+                } : {},
+                // Filter by status
+                status ? { status } : {},
+                // Filter by category
+                categoryId ? { categoryId } : {}
+            ].filter(condition => Object.keys(condition).length > 0)
+        };
 
         // Get total count
         const total = await prisma.property.count({ where });

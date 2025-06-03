@@ -3,10 +3,11 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
-import FormOne from "../components/formOne";
+import Form from "../components/form";
 import Switcher from "../components/switcher";
 import { propertyApi, Property, Pagination } from "../../services/api";
 
@@ -15,6 +16,7 @@ import { LuBath, LuBedDouble } from "react-icons/lu";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
 export default function List() {
+    const searchParams = useSearchParams();
     const [properties, setProperties] = useState<Property[]>([]);
     const [pagination, setPagination] = useState<Pagination>({
         total: 0,
@@ -28,7 +30,11 @@ export default function List() {
     const fetchProperties = async (page: number) => {
         try {
             setLoading(true);
-            const response = await propertyApi.getAll(page);
+            const status = searchParams.get('status') || undefined;
+            const search = searchParams.get('search') || undefined;
+            const categoryId = searchParams.get('categoryId') || undefined;
+            
+            const response = await propertyApi.getAll(page, 12, search, status, categoryId);
             setProperties(response.properties);
             setPagination(response.pagination);
             setError(null);
@@ -42,7 +48,7 @@ export default function List() {
 
     useEffect(() => {
         fetchProperties(1);
-    }, []);
+    }, [searchParams]);
 
     const handlePageChange = (page: number) => {
         fetchProperties(page);
@@ -70,7 +76,7 @@ export default function List() {
             </div>
             <div className="container relative -mt-16 z-1">
                 <div className="grid grid-cols-1">
-                    <FormOne />
+                    <Form />
                 </div>
             </div>
             <section className="relative lg:py-24 py-16">
@@ -83,6 +89,11 @@ export default function List() {
                     ) : error ? (
                         <div className="text-center py-10 text-red-600">
                             {error}
+                        </div>
+                    ) : properties.length === 0 ? (
+                        <div className="text-center py-10">
+                            <p className="text-gray-600 text-lg">No properties found matching your search criteria.</p>
+                            <p className="text-gray-500 mt-2">Try adjusting your filters or search terms.</p>
                         </div>
                     ) : (
                         <>

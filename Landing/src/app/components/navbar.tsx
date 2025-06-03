@@ -115,31 +115,7 @@ export default function Navbar({ navClass, topnavClass, tagline }:{ navClass:str
 
                             <li className={manu ===  "/sell" ? 'active' : '' }><Link href="/sell" className="sub-menu-item">Sell</Link></li>
 
-                            <li className={`has-submenu parent-parent-menu-item ${["/grid", "/grid-sidebar", "/grid-map", "/list", "/list-sidebar", "/list-map", "/property-detail/1","/property-detail-two"].includes(manu) ? 'active' : ''}`}>
-                                <Link href="#" onClick={()=>{setSubManu(subManu === "/list-item" ? "" : "/list-item")}}>Listing</Link><span className="menu-arrow"></span>
-                                <ul className={`submenu ${["/grid", "/grid-sidebar", "/grid-map", "/list", "/list-sidebar", "/list-map", "/property-detail/1", "/list-item", "/grid-item", "/list-view-item", "/property-item","/property-detail-two"].includes(subManu) ? 'open' : ''}`}>
-                                    <li className={`has-submenu parent-menu-item ${["/grid", "/grid-sidebar", "/grid-map"].includes(manu) ? 'active' : ''}`}><Link href="#"> Grid View </Link><span className="submenu-arrow"></span>
-                                        <ul className={`submenu ${["/grid", "/grid-sidebar", "/grid-map"].includes(subManu) ? 'open' : ''}`}>
-                                            <li className={manu ===  "/grid" ? 'active' : '' }><Link href="/grid" className="sub-menu-item">Grid Listing</Link></li>
-                                            <li className={manu ===  "/grid-sidebar" ? 'active' : '' }><Link href="/grid-sidebar" className="sub-menu-item">Grid Sidebar </Link></li>
-                                            <li className={manu ===  "/grid-map" ? 'active' : '' }><Link href="/grid-map" className="sub-menu-item">Grid With Map</Link></li>
-                                        </ul>
-                                    </li>
-                                    <li className={`has-submenu parent-menu-item ${["/list", "/list-sidebar", "/list-map"].includes(manu) ? 'active' : ''}`}><Link href="#" onClick={() =>{setSubManu(subManu === "/list-view-item" ? "" : "/list-view-item")}}> List View </Link><span className="submenu-arrow"></span>
-                                        <ul className={`submenu ${["/list", "/list-sidebar", "/list-map", "/list-view-item"].includes(subManu) ? 'open' : ''}`}>
-                                            <li className={manu ===  "/list" ? 'active' : '' }><Link href="/list" className="sub-menu-item">List Listing</Link></li>
-                                            <li className={manu ===  "/list-sidebar" ? 'active' : '' }><Link href="/list-sidebar" className="sub-menu-item">List Sidebar </Link></li>
-                                            <li className={manu ===  "/list-map" ? 'active' : '' }><Link href="/list-map" className="sub-menu-item">List With Map</Link></li>
-                                        </ul>
-                                    </li>
-                                    <li className={`has-submenu parent-menu-item ${["/property-detail/1","/property-detail-two"].includes(manu) ? 'active' : ''}`}><Link href="#" onClick={() =>{setSubManu(subManu === "/property-item" ? "" : "/property-item")}}> Property Detail </Link><span className="submenu-arrow"></span>
-                                        <ul className={`submenu ${["/property-detail/1", "/property-item"].includes(subManu) ? 'open' : ''}`}>
-                                            <li className={manu ===  "/property-detail/1" ? 'active' : '' }><Link href="/property-detail/1" className="sub-menu-item">Property Detail</Link></li>
-                                            <li className={manu ===  "/property-detail-two" ? 'active' : '' }><Link href="/property-detail-two" className="sub-menu-item">Property Detail Two</Link></li>
-                                        </ul>
-                                    </li>
-                                </ul>
-                            </li>
+                            <li className={`has-submenu parent-menu-item ${["/list"].includes(manu) ? 'active' : ''}`}><Link href="/list"> Listing </Link></li>
 
                             <li className={`has-submenu parent-parent-menu-item ${["/aboutus", "/features", "/pricing", "/faqs", "/auth-login", "/auth-signup", "/auth-reset-password", "/terms", "/privacy", "/blogs", "/blog-sidebar", "/blog-detail", "/comingsoon", "/maintenance", "/404","/agents", "/agent-profile","/agencies", "/agency-profile"].includes(manu) ? 'active' : ''}`}>
                                 <Link href="#" onClick={()=>{setSubManu(subManu === "/page-item" ? '' : "/page-item")}}>Pages</Link><span className="menu-arrow"></span>

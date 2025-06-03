@@ -112,6 +112,7 @@ model Category {
 enum PropertyStatus {
   ACTIVE
   SOLD
+  RENT
 }
 
 enum OwnershipType {

@@ -41,7 +41,7 @@ export interface PaginatedResponse {
     pagination: Pagination;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 // Create axios instance with default config
 const api = axios.create({
@@ -62,10 +62,10 @@ api.interceptors.response.use(
 );
 
 export const propertyApi = {
-    getAll: async (page = 1, limit = 12, search = ''): Promise<PaginatedResponse> => {
+    getAll: async (page = 1, limit = 12, search = '', status?: string, categoryId?: string): Promise<PaginatedResponse> => {
         try {
             const response = await api.get('/properties', {
-                params: { page, limit, search }
+                params: { page, limit, search, status, categoryId }
             });
             return response.data;
         } catch (error) {
