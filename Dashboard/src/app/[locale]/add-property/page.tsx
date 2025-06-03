@@ -1,17 +1,25 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
 import Wrapper from "@/components/wrapper";
 import ImageUpload from "@/components/imageUpload";
 import FileUpload from "@/components/FileUpload";
 
+interface Category {
+    id: number;
+    name: string;
+    slug: string;
+    image: string;
+}
+
 export default function AddProperty(){
+    const [categories, setCategories] = useState<Category[]>([]);
     const [formData, setFormData] = useState({
         // Basic Information
         name: '',
-        category: 'FLAT',
+        categoryId: '',
         status: 'ACTIVE',
         ownershipType: 'OWNERSHIP',
         description: '',
@@ -75,6 +83,31 @@ export default function AddProperty(){
         secondaryAgent: ''
     });
 
+    useEffect(() => {
+        // Fetch categories when component mounts
+        const fetchCategories = async () => {
+            try {
+                const response = await fetch('http://localhost:3003/api/categories');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch categories');
+                }
+                const data = await response.json();
+                setCategories(data);
+                // Set default category if available
+                if (data.length > 0) {
+                    setFormData(prev => ({
+                        ...prev,
+                        categoryId: data[0].id.toString()
+                    }));
+                }
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+            }
+        };
+
+        fetchCategories();
+    }, []);
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -94,7 +127,7 @@ export default function AddProperty(){
             Object.entries(formData).forEach(([key, value]) => {
                 if (value !== '') {  // Only send non-empty values
                     // Ensure enum values are properly formatted
-                    if (key === 'category' || key === 'status' || key === 'ownershipType') {
+                    if (key === 'categoryId' || key === 'status' || key === 'ownershipType') {
                         formDataToSend.append(key, value.toUpperCase());
                     } else {
                         formDataToSend.append(key, value);
@@ -160,7 +193,7 @@ export default function AddProperty(){
             // Reset form
             setFormData({
                 name: '',
-                category: 'FLAT',
+                categoryId: '',
                 status: 'ACTIVE',
                 ownershipType: 'OWNERSHIP',
                 description: '',
@@ -266,14 +299,19 @@ export default function AddProperty(){
                                         </div>
 
                                         <div className="col-span-12 md:col-span-4">
-                                            <label htmlFor="category" className="font-medium">Category:</label>
-                                            <select name="category" id="category" className="form-input border !border-gray-200 dark:!border-gray-800 mt-2 focus:!border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-colors duration-200" value={formData.category} onChange={handleInputChange}>
-                                                <option value="FLAT">Flat</option>
-                                                <option value="COTTAGE">Cottage</option>
-                                                <option value="HOUSE">House</option>
-                                                <option value="LAND">Land</option>
-                                                <option value="PROJECT">Project</option>
-                                                <option value="VILLA">Villa</option>
+                                            <label htmlFor="categoryId" className="font-medium">Category:</label>
+                                            <select 
+                                                name="categoryId" 
+                                                id="categoryId" 
+                                                className="form-input border !border-gray-200 dark:!border-gray-800 mt-2 focus:!border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-colors duration-200" 
+                                                value={formData.categoryId} 
+                                                onChange={handleInputChange}
+                                            >
+                                                {categories.map((category) => (
+                                                    <option key={category.id} value={category.id}>
+                                                        {category.name}
+                                                    </option>
+                                                ))}
                                             </select>
                                         </div>
 

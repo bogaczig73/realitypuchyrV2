@@ -36,7 +36,9 @@
       "video": "Video",
       "noDescription": "Popis není k dispozici",
       "noDocuments": "Žádné dokumenty nejsou přiloženy",
+      "noDocumentsAttached": "Žádné dokumenty nejsou připojeny",
       "noEquipment": "Popis vybavení není k dispozici",
+      "noEquipmentDescription": "Popis vybavení není k dispozici",
       "noSources": "Žádné další zdroje nejsou k dispozici",
       "fields": {
         "category": "Kategorie",

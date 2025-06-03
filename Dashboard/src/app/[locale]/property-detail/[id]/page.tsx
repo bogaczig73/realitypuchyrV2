@@ -65,7 +65,13 @@ export default function PropertyDetail() {
         if (value === null || value === undefined || value === '') {
             return <span className="text-gray-400 italic">-</span>;
         }
-        return value;
+        if (typeof value === 'object' && value !== null) {
+            if ('name' in value && 'slug' in value && 'image' in value) {
+                return <span>{String(value.name)}</span>;
+            }
+            return <span className="text-gray-400 italic">-</span>;
+        }
+        return <span>{String(value)}</span>;
     };
 
     const getGoogleMapsUrl = () => {

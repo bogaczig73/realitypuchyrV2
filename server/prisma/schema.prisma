@@ -10,7 +10,8 @@ datasource db {
 model Property {
   id                          Int                 @id @default(autoincrement())
   name                        String
-  category                    PropertyCategory
+  categoryId                  Int                 @map("category_id")
+  category                    Category            @relation(fields: [categoryId], references: [id])
   status                      PropertyStatus      @default(ACTIVE)
   ownershipType               OwnershipType
   description                 String
@@ -77,6 +78,7 @@ model PropertyImage {
   id         Int      @id @default(autoincrement())
   url        String
   isMain     Boolean  @default(false)
+  order      Int      @default(0)
   propertyId Int      @map("property_id")
   createdAt  DateTime @default(now()) @map("created_at")
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
@@ -95,13 +97,16 @@ model PropertyFloorplan {
   @@map("property_floorplans")
 }
 
-enum PropertyCategory {
-  FLAT
-  COTTAGE
-  HOUSE
-  LAND
-  PROJECT
-  VILLA
+model Category {
+  id          Int        @id @default(autoincrement())
+  name        String     @unique
+  slug        String     @unique
+  image       String
+  properties  Property[]
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  @@map("categories")
 }
 
 enum PropertyStatus {

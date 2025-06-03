@@ -36,7 +36,9 @@
       "video": "Video",
       "noDescription": "Keine Beschreibung verfügbar",
       "noDocuments": "Keine Dokumente angehängt",
+      "noDocumentsAttached": "Keine Dokumente angehängt",
       "noEquipment": "Keine Ausstattungsbeschreibung verfügbar",
+      "noEquipmentDescription": "Keine Ausstattungsbeschreibung verfügbar",
       "noSources": "Keine zusätzlichen Quellen verfügbar",
       "fields": {
         "category": "Kategorie",

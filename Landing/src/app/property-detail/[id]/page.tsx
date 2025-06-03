@@ -23,7 +23,12 @@ interface Property {
   size: number;
   beds: number;
   baths: number;
-  category: string;
+  category: {
+    id: number;
+    name: string;
+    slug: string;
+    image: string;
+  };
   status: string;
   ownershipType: string;
   city: string;
@@ -156,7 +161,15 @@ export default function PropertyDetail() {
     if (value === null || value === undefined || value === '') {
       return <span className="text-gray-400 italic">-</span>;
     }
-    return value;
+    if (typeof value === 'object' && value !== null) {
+      if ('name' in value && 'slug' in value && 'image' in value) {
+        console.log('Category object:', value);
+        return <span>{String(value.name)}</span>;
+      }
+      console.log('Unknown object:', value);
+      return <span className="text-gray-400 italic">-</span>;
+    }
+    return <span>{String(value)}</span>;
   };
 
   const getGoogleMapsUrl = () => {
@@ -201,7 +214,7 @@ export default function PropertyDetail() {
               <ul className="py-6 flex items-center list-none">
                 <li className="flex items-center lg:me-6 me-4">
                   <LiaCompressArrowsAltSolid className="lg:text-3xl text-2xl me-2 text-green-600"/>
-                  <span className="lg:text-xl">{property.size}m²</span>
+                  <span className="lg:text-xl">{property.size}</span>
                 </li>
 
                 <li className="flex items-center lg:me-6 me-4">
@@ -209,14 +222,9 @@ export default function PropertyDetail() {
                   <span className="lg:text-xl">{property.beds} Beds</span>
                 </li>
 
-                <li className="flex items-center lg:me-6 me-4">
+                <li className="flex items-center">
                   <LuBath className="lg:text-3xl text-2xl me-2 text-green-600"/>
                   <span className="lg:text-xl">{property.baths} Baths</span>
-                </li>
-
-                <li className="flex items-center">
-                  <i className="mdi mdi-floor-plan text-2xl me-2 text-green-600"></i>
-                  <span className="lg:text-xl">{formatValue(property.layout)}</span>
                 </li>
               </ul>
 
@@ -478,7 +486,9 @@ export default function PropertyDetail() {
                       {property.discountedPrice && (
                         <span className="text-xl font-medium line-through text-red-500">$ {property.discountedPrice.toLocaleString()}</span>
                       )}
-                      <span className="bg-green-600/10 text-green-600 text-sm px-2.5 py-0.75 rounded h-6">{property.status}</span>
+                      <span className="bg-green-600/10 text-green-600 text-sm px-2.5 py-0.75 rounded h-6">
+                        {formatValue(property.category)}
+                      </span>
                     </div>
 
                     <ul className="list-none mt-4">

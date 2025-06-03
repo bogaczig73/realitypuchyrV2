@@ -11,6 +11,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 // Import routes
 const propertyRoutes = require('./routes/propertyRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
+const categoriesRouter = require('./routes/categories');
 
 const app = express();
 const port = process.env.PORT || 3003;
@@ -49,6 +50,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/properties', propertyRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/categories', categoriesRouter);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

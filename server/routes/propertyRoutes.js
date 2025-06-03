@@ -99,7 +99,12 @@ router.get('/', async (req, res, next) => {
             take: limit,
             orderBy: { createdAt: 'desc' },
             include: {
-                images: true
+                images: {
+                    orderBy: {
+                        order: 'asc'
+                    }
+                },
+                category: true
             }
         });
 
@@ -109,7 +114,11 @@ router.get('/', async (req, res, next) => {
             images: property.images.map(image => ({
                 ...image,
                 url: convertToCloudFrontUrl(image.url)
-            }))
+            })),
+            category: {
+                ...property.category,
+                image: convertToCloudFrontUrl(property.category.image)
+            }
         }));
 
         res.json({
@@ -134,16 +143,34 @@ router.get('/:id', async (req, res, next) => {
         const property = await prisma.property.findUnique({
             where: { id: parseInt(id) },
             include: {
-                images: true,
-                floorplans: true
+                images: {
+                    orderBy: {
+                        order: 'asc'
+                    }
+                },
+                floorplans: true,
+                category: true
             }
         });
         
         if (!property) {
             return res.status(404).json({ error: 'Property not found' });
         }
+
+        // Convert S3 URLs to CloudFront URLs
+        const propertyWithCloudFrontUrls = {
+            ...property,
+            images: property.images.map(image => ({
+                ...image,
+                url: convertToCloudFrontUrl(image.url)
+            })),
+            category: {
+                ...property.category,
+                image: convertToCloudFrontUrl(property.category.image)
+            }
+        };
         
-        res.json(property);
+        res.json(propertyWithCloudFrontUrls);
     } catch (err) {
         console.error('Error fetching property:', err);
         next(err);
@@ -157,7 +184,7 @@ router.post('/', uploadPropertyFiles, validateProperty, async (req, res, next) =
         console.log('Request body:', req.body);
 
         const {
-            name, category, status, ownershipType, description,
+            name, categoryId, status, ownershipType, description,
             city, street, country, latitude, longitude,
             virtualTour, videoUrl, size, beds, baths,
             price, discountedPrice, buildingStoriesNumber,
@@ -176,12 +203,13 @@ router.post('/', uploadPropertyFiles, validateProperty, async (req, res, next) =
         } = req.body;
 
         // Validate required fields
-        if (!name || !price) {
+        if (!name || !price || !categoryId) {
             return res.status(400).json({
                 error: 'Missing required fields',
                 details: [
                     !name && 'Name is required',
-                    !price && 'Price is required'
+                    !price && 'Price is required',
+                    !categoryId && 'Category is required'
                 ].filter(Boolean)
             });
         }
@@ -192,7 +220,7 @@ router.post('/', uploadPropertyFiles, validateProperty, async (req, res, next) =
                 // Required fields
                 name,
                 price: parseFloat(price),
-                category: category.toUpperCase(),
+                categoryId: parseInt(categoryId),
                 status: status.toUpperCase(),
                 ownershipType: ownershipType.toUpperCase(),
                 description: description || '',
@@ -238,7 +266,7 @@ router.post('/', uploadPropertyFiles, validateProperty, async (req, res, next) =
                 houseEquipment: houseEquipment || null,
                 accessRoad: accessRoad || null,
                 objectCondition: objectCondition || null,
-                reservationPrice: reservationPrice || null,
+                reservationPrice: reservationPrice ? parseFloat(reservationPrice) : null,
                 equipmentDescription: equipmentDescription || null,
                 additionalSources: additionalSources || null,
                 buildingPermit: buildingPermit || null,
@@ -246,94 +274,72 @@ router.post('/', uploadPropertyFiles, validateProperty, async (req, res, next) =
                 utilitiesOnLand: utilitiesOnLand || null,
                 utilitiesOnAdjacentRoad: utilitiesOnAdjacentRoad || null,
                 payments: payments || null,
-                brokerId: brokerId || null,
-                secondaryAgent: secondaryAgent || null
+                brokerId: brokerId ? parseInt(brokerId) : null,
+                secondaryAgent: secondaryAgent || null,
             }
         });
 
-        // Handle image uploads if any
+        // Handle image uploads
         if (req.files && req.files.images) {
-            console.log('Processing', req.files.images.length, 'images');
-            const imagePromises = req.files.images.map(async (file, index) => {
-                try {
-                    console.log('Uploading image', index + 1);
-                    const imageUrl = await uploadFileToS3(file, property.id, 'images');
-                    console.log('Image uploaded successfully:', imageUrl);
-                    return prisma.propertyImage.create({
-                        data: {
-                            url: imageUrl,
-                            isMain: index === 0, // First image is main
-                            propertyId: property.id
-                        }
-                    });
-                } catch (error) {
-                    console.error('Error uploading image', index + 1, ':', error);
-                    throw error;
-                }
-            });
+            const imageUploadPromises = req.files.images.map((file, index) => 
+                uploadFileToS3(file, property.id, 'images', index)
+            );
+            const imageUrls = await Promise.all(imageUploadPromises);
 
-            try {
-                await Promise.all(imagePromises);
-                console.log('All images processed successfully');
-            } catch (error) {
-                console.error('Error processing images:', error);
-                // If image upload fails, delete the property
-                await prisma.property.delete({
-                    where: { id: property.id }
-                });
-                throw new Error('Failed to upload images: ' + error.message);
-            }
+            // Create image records in the database
+            await prisma.propertyImage.createMany({
+                data: imageUrls.map((url, index) => ({
+                    propertyId: property.id,
+                    url,
+                    order: index,
+                    isMain: index === 0 // Set first image as main
+                }))
+            });
         }
 
-        // Handle file uploads if any
+        // Handle file uploads
         if (req.files && req.files.files) {
-            console.log('Processing', req.files.files.length, 'files');
-            const filePromises = req.files.files.map(async (file) => {
-                try {
-                    console.log('Uploading file:', file.originalname);
-                    const fileUrl = await uploadFileToS3(file, property.id, 'files');
-                    console.log('File uploaded successfully:', fileUrl);
-                    return {
-                        name: file.originalname,
-                        url: fileUrl,
-                        type: file.mimetype,
-                        size: file.size
-                    };
-                } catch (error) {
-                    console.error('Error uploading file:', file.originalname, error);
-                    throw error;
+            const fileUploadPromises = req.files.files.map((file, index) => 
+                uploadFileToS3(file, property.id, 'files', index)
+            );
+            const fileUrls = await Promise.all(fileUploadPromises);
+
+            // Update property with file URLs
+            await prisma.property.update({
+                where: { id: property.id },
+                data: {
+                    files: JSON.stringify(fileUrls)
                 }
             });
-
-            try {
-                const uploadedFiles = await Promise.all(filePromises);
-                // Update property with file references
-                await prisma.property.update({
-                    where: { id: property.id },
-                    data: {
-                        files: JSON.stringify(uploadedFiles)
-                    }
-                });
-                console.log('All files processed successfully');
-            } catch (error) {
-                console.error('Error processing files:', error);
-                // If file upload fails, delete the property
-                await prisma.property.delete({
-                    where: { id: property.id }
-                });
-                throw new Error('Failed to upload files: ' + error.message);
-            }
         }
 
-        // Get the complete property with images and files
+        // Fetch the complete property with images and category
         const completeProperty = await prisma.property.findUnique({
             where: { id: property.id },
             include: {
-                images: true
+                images: {
+                    orderBy: {
+                        order: 'asc'
+                    }
+                },
+                category: true
             }
         });
 
-        res.status(201).json(completeProperty);
+        // Convert S3 URLs to CloudFront URLs
+        const propertyWithCloudFrontUrls = {
+            ...completeProperty,
+            images: completeProperty.images.map(image => ({
+                ...image,
+                url: convertToCloudFrontUrl(image.url)
+            })),
+            category: {
+                ...completeProperty.category,
+                image: convertToCloudFrontUrl(completeProperty.category.image)
+            }
+        };
+
+        res.status(201).json(propertyWithCloudFrontUrls);
     } catch (err) {
         console.error('Error creating property:', err);
         next(err);
