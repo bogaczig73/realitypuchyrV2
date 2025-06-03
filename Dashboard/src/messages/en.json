@@ -29,15 +29,13 @@
       "buildingDetails": "Building Details",
       "areasAndSpaces": "Areas and Spaces",
       "additionalInfo": "Additional Information",
-      "equipmentDescription": "Equipment Description",
-      "additionalSources": "Additional Sources",
       "attachedDocuments": "Attached Documents",
       "virtualTour": "Virtual Tour",
       "video": "Video",
       "noDescription": "No description available",
       "noDocuments": "No documents attached",
-      "noEquipment": "No equipment description available",
-      "noSources": "No additional sources available",
+      "noEquipmentDescription": "No equipment description available",
+      "noAdditionalSources": "No additional sources available",
       "fields": {
         "category": "Category",
         "status": "Status",
@@ -91,7 +89,13 @@
         "files": "Attached Files",
         "reviewCount": "Reviews",
         "rating": "Rating",
-        "ratingWithCount": "{rating} ({count} reviews)"
+        "ratingWithCount": "{rating} ({count} reviews)",
+        "equipmentDescription": "Equipment Description",
+        "additionalSources": "Additional Sources",
+        "video": "Video",
+        "virtualTour": "Virtual Tour",
+        "attachedDocuments": "Attached Documents",
+        "listedOn": "Listed On"
       },
       "actions": {
         "bookNow": "Book Now",
